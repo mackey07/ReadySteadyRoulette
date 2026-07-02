@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Ready Steady Roulette</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #14151A;
+    --panel: #1D1F26;
+    --panel-border: #2B2D35;
+    --cream: #F2EEE4;
+    --muted: #9EA1AA;
+    --faint: #6F7178;
+    --dim-border: #33353D;
+    --red: #FF3D6E;
+    --blue: #4361EE;
+    --gold: #FFD23F;
+    --green: #00C2A8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--cream);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    padding: 48px 20px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: var(--faint);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  h1 {
+    font-family: 'Anton', sans-serif;
+    font-size: clamp(36px, 7vw, 64px);
+    letter-spacing: 1px;
+    margin: 0;
+    line-height: 0.95;
+    text-align: center;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin: 22px 0 20px;
+    max-width: 560px;
+  }
+  .chip {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--dim-border);
+    background: transparent;
+    color: #B7B9C0;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+  .chip.active { background-color: color-mix(in srgb, var(--chip-color) 13%, transparent); }
+  .infinite-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--dim-border);
+    background: transparent;
+    color: #8A8D96;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .infinite-toggle .dot { width: 8px; height: 8px; border-radius: 50%; background: #4B4D55; }
+  .infinite-toggle.on { border-color: var(--green); color: var(--green); background: rgba(0,194,168,0.1); }
+  .infinite-toggle.on .dot { background: var(--green); }
+  .toggle-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 10px; }
+  #liveNotice {
+    font-size: 12px;
+    color: var(--gold);
+    margin-bottom: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    text-align: center;
+    min-height: 14px;
+  }
+  .roundel-btn { background: none; border: none; cursor: pointer; padding: 0; margin: 8px 0 12px; }
+  .roundel {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 0 0 2px rgba(242,238,228,0.08), 0 20px 60px rgba(0,0,0,0.45);
+    transition: transform 0.85s cubic-bezier(.15,.9,.25,1);
+  }
+  .roundel.spinning { transform: rotate(900deg); }
+  .roundel .ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .spin-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--faint);
+    margin-bottom: 36px;
+    letter-spacing: 1px;
+  }
+  .card {
+    width: 100%;
+    max-width: 640px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 22px;
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+  }
+  .cover {
+    width: 96px;
+    height: 96px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+  .cover .disc { position: absolute; top: 50%; left: 50%; border-radius: 50%; transform: translate(-50%, -50%); }
+  .card-body { flex: 1; min-width: 0; }
+  .card-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .card-title { font-family: 'Anton', sans-serif; font-size: 22px; line-height: 1.1; margin-bottom: 2px; }
+  .card-artist { font-size: 15px; color: #C9CBD2; margin-bottom: 10px; }
+  .card-note { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+  .card-track { font-size: 12px; color: var(--faint); letter-spacing: 0.3px; margin-bottom: 14px; }
+  .card-track span { color: #C9CBD2; }
+  .card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn {
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--dim-border);
+    background: transparent;
+    color: #B7B9C0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn.listened { border-color: var(--green); background: rgba(0,194,168,0.1); color: var(--green); }
+  .btn.apple { border-color: rgba(255,61,110,0.33); background: rgba(255,61,110,0.1); color: #FFAFC4; }
+  .empty-state { color: var(--faint); font-size: 14px; text-align: center; max-width: 380px; }
+  .history-wrap { margin-top: 40px; width: 100%; max-width: 640px; }
+  .history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .history-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--faint); letter-spacing: 1px; text-transform: uppercase; }
+  .reset-link { background: none; border: none; color: var(--faint); font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; font-family: 'IBM Plex Mono', monospace; text-decoration: underline; }
+  .history-row {
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    border-bottom: 1px solid #24262D;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+  .history-row .h-info { min-width: 0; line-height: 1.4; }
+  .history-row .h-info span.title { color: #C9CBD2; }
+  .history-row .h-year {
+    flex-shrink: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    padding-top: 1px;
+    min-width: 34px;
+    text-align: right;
+  }
+  .listened-count { margin-top: 28px; font-size: 12px; color: var(--faint); font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.5px; text-align: center; }
+  .complete-banner {
+    margin-top: 28px;
+    max-width: 420px;
+    text-align: center;
+    padding: 18px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--gold);
+    background: rgba(255,210,63,0.1);
+  }
+  .complete-banner .headline { font-family: 'Anton', sans-serif; font-size: 18px; color: var(--gold); margin-bottom: 6px; }
+  .complete-banner .sub { font-size: 13px; color: var(--muted); margin-bottom: 14px; line-height: 1.4; }
+
+  .excluded-wrap { width: 100%; max-width: 640px; margin-top: 20px; text-align: center; }
+  .excluded-toggle { background: none; border: none; color: var(--faint); font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; font-family: 'IBM Plex Mono', monospace; text-decoration: underline; }
+  .excluded-panel { margin-top: 14px; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+  .excluded-row { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
+  .excluded-row .er-info { flex: 1; min-width: 0; }
+  .excluded-row .er-info .title { color: #C9CBD2; }
+  .excluded-row button { background: none; border: 1px solid var(--dim-border); color: var(--faint); font-size: 11px; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; flex-shrink: 0; }
+  .excluded-row button:hover { border-color: var(--red); color: var(--red); }
+  .excluded-clear-all { margin-top: 4px; align-self: center; }
+</style>
+</head>
+<body>
+  <div class="eyebrow">Scooter optional · Parka recommended</div>
+  <h1>READY STEADY ROULETTE</h1>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="toggle-row">
+    <button class="infinite-toggle" id="infiniteToggle">
+      <span class="dot"></span>
+      <span id="infiniteLabel">∞ INFINITE MODE — LIVE APPLE MUSIC CATALOG ON</span>
+    </button>
+    <button class="infinite-toggle" id="studioToggle">
+      <span class="dot"></span>
+      <span id="studioLabel">STUDIO ALBUMS ONLY ON</span>
+    </button>
+    <button class="infinite-toggle" id="skipListenedToggle">
+      <span class="dot"></span>
+      <span id="skipListenedLabel">SKIP LISTENED ALBUMS ON</span>
+    </button>
+  </div>
+  <div id="liveNotice"></div>
+
+  <button class="roundel-btn" id="roundelBtn" aria-label="Spin for a random album">
+    <div class="roundel" id="roundel"></div>
+  </button>
+  <div class="spin-label" id="spinLabel">TAP THE TARGET</div>
+
+  <div id="cardWrap"></div>
+  <div id="historyWrap"></div>
+  <div id="listenedCountWrap"></div>
+  <div id="excludedWrap"></div>
+
+<script>
+const CATS = {
+  sixties: { label: "60s Mod", color: "#FF3D6E" },
+  revival: { label: "Mod Revival", color: "#4361EE" },
+  britpop: { label: "Britpop & Mod-Adjacent", color: "#FFD23F" },
+  indie: { label: "Modern Indie", color: "#00C2A8" },
+};
+
+const ALBUMS = [
+  { artist: "The Who", title: "My Generation", year: 1965, cat: "sixties", note: "The mod anthem itself, plus a Rickenbacker riot from Townshend and Moon.", track: "My Generation" },
+  { artist: "Small Faces", title: "Small Faces", year: 1966, cat: "sixties", note: "Steve Marriott's soul-shout over Hammond and fuzz — Carnaby Street in album form.", track: "Whatcha Gonna Do About It" },
+  { artist: "Small Faces", title: "Ogdens' Nut Gone Flake", year: 1968, cat: "sixties", note: "The round tin, the music-hall whimsy, still one of the great British psych-mod records.", track: "Lazy Sunday" },
+  { artist: "The Kinks", title: "Face to Face", year: 1966, cat: "sixties", note: "Ray Davies turns sharp social observation into three-minute pop songs.", track: "Sunny Afternoon" },
+  { artist: "Georgie Fame", title: "Rhythm and Blues at the Flamingo", year: 1964, cat: "sixties", note: "Live from the club where mod actually happened — organ-led R&B and jazz.", track: "Humpty Dumpty" },
+  { artist: "The Action", title: "Rolled Gold", year: 1968, cat: "sixties", note: "Recorded for release, shelved for decades — the great lost mod-soul album.", track: "Brain" },
+  { artist: "The Spencer Davis Group", title: "Second Album", year: 1966, cat: "sixties", note: "Teenage Steve Winwood belting soul over tight R&B backing.", track: "Keep On Running" },
+  { artist: "Zoot Money's Big Roll Band", title: "It Should've Been Me", year: 1966, cat: "sixties", note: "Club-circuit R&B with horns, built for a packed dancefloor.", track: "Big Time Operator" },
+  { artist: "The Artwoods", title: "Art Gallery", year: 1966, cat: "sixties", note: "Underrated, organ-heavy R&B from Ron Wood's older brother's band.", track: "In the Pouring Rain" },
+  { artist: "The Yardbirds", title: "Having a Rave Up", year: 1965, cat: "sixties", note: "Clapton out, Beck in — blues R&B pushed toward freakbeat.", track: "I'm a Man" },
+  { artist: "Manfred Mann", title: "The Five Faces of Manfred Mann", year: 1964, cat: "sixties", note: "Jazz-schooled R&B that packed the same clubs as The Who.", track: "5-4-3-2-1" },
+  { artist: "The Pretty Things", title: "The Pretty Things", year: 1965, cat: "sixties", note: "Rawer and wilder than the Stones, straight off the same R&B circuit.", track: "Don't Bring Me Down" },
+  { artist: "Booker T. & the M.G.'s", title: "Green Onions", year: 1962, cat: "sixties", note: "The instrumental every mod DJ leaned on — Stax organ-and-guitar cool.", track: "Green Onions" },
+
+  { artist: "The Jam", title: "In the City", year: 1977, cat: "revival", note: "Punk energy, mod tailoring — the record that started the revival outright.", track: "In the City" },
+  { artist: "The Jam", title: "This Is the Modern World", year: 1977, cat: "revival", note: "Rougher, faster, and still figuring out its own identity.", track: "The Modern World" },
+  { artist: "The Jam", title: "All Mod Cons", year: 1978, cat: "revival", note: "The turning point — sharper songwriting, Kinks-ish melody, real ambition.", track: "'A' Bomb in Wardour Street" },
+  { artist: "The Jam", title: "Setting Sons", year: 1979, cat: "revival", note: "A near-concept record about three friends and a fractured Britain.", track: "Eton Rifles" },
+  { artist: "The Jam", title: "Sound Affects", year: 1980, cat: "revival", note: "Weller absorbing Wire and Motown at once — the most complete Jam album.", track: "Start!" },
+  { artist: "Secret Affair", title: "Glory Boys", year: 1979, cat: "revival", note: "Ian Page's brass-driven 'mod revival' manifesto, right down to the title.", track: "Time for Action" },
+  { artist: "The Chords", title: "So Far Away", year: 1980, cat: "revival", note: "Chiming guitars and harmonies — one of the revival's strongest singles runs.", track: "Maybe Tomorrow" },
+  { artist: "The Merton Parkas", title: "Face in the Crowd", year: 1979, cat: "revival", note: "Organ-fronted, Small Faces-indebted, straight off the terraces.", track: "You Need Wheels" },
+  { artist: "The Lambrettas", title: "Beat Boys in the Jet Age", year: 1980, cat: "revival", note: "Named after the scooter, sounds like it too — brisk and hooky.", track: "Poison Ivy" },
+  { artist: "Purple Hearts", title: "Beat That!", year: 1980, cat: "revival", note: "Romford's finest, tougher and more R&B-rooted than most of the class of '79.", track: "Millions Like Us" },
+  { artist: "Squire", title: "Match", year: 1982, cat: "revival", note: "Melodic guitar pop from one of the revival's more overlooked bands.", track: "Walking Down the King's Road" },
+  { artist: "The Prisoners", title: "The Wisermiserdemelza", year: 1982, cat: "revival", note: "Garage-organ mod with a psych edge, out of Medway.", track: "Better in Black" },
+  { artist: "The Times", title: "Pop Goes Art!", year: 1982, cat: "revival", note: "Art-pop mod with a pop-art sleeve to match — sharp and knowing.", track: "I Helped Patrick McGoohan Escape" },
+
+  { artist: "The Style Council", title: "Café Bleu", year: 1984, cat: "britpop", note: "Weller trades the Jam's snap for jazz, soul, and continental cool.", track: "My Ever Changing Moods" },
+  { artist: "The Style Council", title: "Our Favourite Shop", year: 1985, cat: "britpop", note: "Their most focused record — politics and pop sitting easily together.", track: "Walls Come Tumbling Down!" },
+  { artist: "Paul Weller", title: "Paul Weller", year: 1992, cat: "britpop", note: "The comeback that quietly reset his whole career.", track: "Uh Huh Oh Yeh" },
+  { artist: "Paul Weller", title: "Wild Wood", year: 1993, cat: "britpop", note: "Folk-soul and Traffic-inspired warmth — the Modfather album, really.", track: "Wild Wood" },
+  { artist: "Paul Weller", title: "Stanley Road", year: 1995, cat: "britpop", note: "His biggest solo album, named after the street he grew up on.", track: "The Changingman" },
+  { artist: "Ocean Colour Scene", title: "Moseley Shoals", year: 1996, cat: "britpop", note: "Weller-endorsed, riff-heavy, unmistakably mod-schooled Britpop.", track: "The Riverboat Song" },
+  { artist: "Blur", title: "Parklife", year: 1994, cat: "britpop", note: "Kinks-ish character studies dressed up in mid-90s London swagger.", track: "Parklife" },
+  { artist: "Oasis", title: "Definitely Maybe", year: 1994, cat: "britpop", note: "Less mod in sound than spirit, but the Weller lineage runs straight through it.", track: "Live Forever" },
+  { artist: "Pulp", title: "Different Class", year: 1995, cat: "britpop", note: "Sharp-suited social satire with a dancefloor underneath it.", track: "Common People" },
+  { artist: "The Charlatans", title: "Some Friendly", year: 1990, cat: "britpop", note: "Hammond organ front and centre, baggy's mod cousin.", track: "The Only One I Know" },
+  { artist: "The Bluetones", title: "Expecting to Fly", year: 1996, cat: "britpop", note: "Melodic, breezy, and full of the jangling 60s guitar Britpop borrowed wholesale.", track: "Slight Return" },
+  { artist: "The La's", title: "The La's", year: 1990, cat: "britpop", note: "One perfect album of Merseybeat-sharp guitar pop, endlessly influential.", track: "There She Goes" },
+  { artist: "Cast", title: "All Change", year: 1995, cat: "britpop", note: "Ex-La John Power's band, all chiming guitars and singalong choruses.", track: "Walkaway" },
+  { artist: "Sleeper", title: "Smart", year: 1995, cat: "britpop", note: "Sharp, guitar-driven Britpop with Louise Wener's dry wit up front.", track: "Inbetweener" },
+
+  { artist: "The Strokes", title: "Is This It", year: 2001, cat: "indie", note: "Skinny ties and clipped guitars — not mod by lineage, but by look and economy.", track: "Last Nite" },
+  { artist: "Franz Ferdinand", title: "Franz Ferdinand", year: 2004, cat: "indie", note: "Art-school angularity built explicitly for the dancefloor.", track: "Take Me Out" },
+  { artist: "The Libertines", title: "Up the Bracket", year: 2002, cat: "indie", note: "Ragged, urgent, unmistakably London — the Jam's chaos-energy heir.", track: "Time for Heroes" },
+  { artist: "Arctic Monkeys", title: "Whatever People Say I Am, That's What I'm Not", year: 2006, cat: "indie", note: "Terrace wit and tight guitar pop, sharp as a two-tone suit.", track: "When the Sun Goes Down" },
+  { artist: "The Coral", title: "The Coral", year: 2002, cat: "indie", note: "Merseybeat, psych and sea-shanty strangeness thrown into one record.", track: "Dreaming of You" },
+  { artist: "The Rifles", title: "No Love Lost", year: 2006, cat: "indie", note: "About as direct a Jam/Weller descendant as 2000s indie produced.", track: "Local Boy" },
+  { artist: "Miles Kane", title: "Colour of the Trap", year: 2011, cat: "indie", note: "Solo Kane at his most scooter-club, sharp-suited best.", track: "Inhaler" },
+  { artist: "The Last Shadow Puppets", title: "The Age of the Understatement", year: 2008, cat: "indie", note: "Kane and Turner do widescreen 60s orchestral pop with a mod edge.", track: "The Age of the Understatement" },
+  { artist: "The Strypes", title: "Snapshot", year: 2013, cat: "indie", note: "Teenagers playing 60s R&B like they were there the first time round.", track: "Blue Collar Jane" },
+  { artist: "The Vaccines", title: "What Did You Expect from The Vaccines?", year: 2011, cat: "indie", note: "Short, sharp, hooky guitar pop with a mod-ish economy of style.", track: "Wreckin' Bar (Ra Ra Ra)" },
+  { artist: "The Enemy", title: "We'll Live and Die in These Towns", year: 2007, cat: "indie", note: "Coventry working-class guitar pop, direct and unpretentious.", track: "Away from Here" },
+  { artist: "Kasabian", title: "Kasabian", year: 2004, cat: "indie", note: "Swaggering, terrace-chant indie with a mod-baggy crossover streak.", track: "Club Foot" },
+  { artist: "The View", title: "Hats Off to the Buskers", year: 2007, cat: "indie", note: "Dundee's fast, scrappy answer to the Libertines/Arctic Monkeys wave.", track: "Same Jeans" },
+  { artist: "The Twang", title: "Love It When I Feel Like This", year: 2007, cat: "indie", note: "Brummie baggy-mod energy with big, terrace-ready choruses.", track: "Either Way" },
+  { artist: "Reverend and the Makers", title: "The State of Things", year: 2007, cat: "indie", note: "Sheffield social commentary over danceable, mod-inflected indie.", track: "Heavyweight Champion of the World" },
+];
+
+const SEED_ARTISTS = [
+  { name: "The Who", cat: "sixties" }, { name: "Small Faces", cat: "sixties" }, { name: "The Kinks", cat: "sixties" },
+  { name: "The Yardbirds", cat: "sixties" }, { name: "The Creation", cat: "sixties" }, { name: "The Move", cat: "sixties" },
+  { name: "Georgie Fame", cat: "sixties" }, { name: "The Spencer Davis Group", cat: "sixties" }, { name: "Manfred Mann", cat: "sixties" },
+  { name: "The Animals", cat: "sixties" }, { name: "The Pretty Things", cat: "sixties" }, { name: "Booker T. & the M.G.'s", cat: "sixties" },
+  { name: "The Jam", cat: "revival" }, { name: "Secret Affair", cat: "revival" }, { name: "The Chords", cat: "revival" },
+  { name: "The Merton Parkas", cat: "revival" }, { name: "The Lambrettas", cat: "revival" }, { name: "Purple Hearts", cat: "revival" },
+  { name: "Squire", cat: "revival" }, { name: "The Prisoners", cat: "revival" }, { name: "The Times", cat: "revival" },
+  { name: "The Style Council", cat: "britpop" }, { name: "Paul Weller", cat: "britpop" }, { name: "Ocean Colour Scene", cat: "britpop" },
+  { name: "Blur", cat: "britpop" }, { name: "Oasis", cat: "britpop" }, { name: "Pulp", cat: "britpop" },
+  { name: "The Charlatans", cat: "britpop" }, { name: "The Bluetones", cat: "britpop" }, { name: "The La's", cat: "britpop" },
+  { name: "Cast", cat: "britpop" }, { name: "Sleeper", cat: "britpop" }, { name: "The Strokes", cat: "indie" },
+  { name: "Franz Ferdinand", cat: "indie" }, { name: "The Libertines", cat: "indie" }, { name: "Arctic Monkeys", cat: "indie" },
+  { name: "The Coral", cat: "indie" }, { name: "The Rifles", cat: "indie" }, { name: "Miles Kane", cat: "indie" },
+  { name: "The Last Shadow Puppets", cat: "indie" }, { name: "The Strypes", cat: "indie" }, { name: "The Vaccines", cat: "indie" },
+  { name: "The Enemy", cat: "indie" }, { name: "Kasabian", cat: "indie" }, { name: "The View", cat: "indie" },
+  { name: "The Twang", cat: "indie" }, { name: "Reverend and the Makers", cat: "indie" },
+];
+
+// ---- State ----
+let filter = "all";
+let album = null;
+let spinning = false;
+let infiniteMode = true;
+let studioOnly = true;
+let skipListened = true;
+let history = [];
+let listened = {};
+let excluded = {};
+let excludedPanelOpen = false;
+let seedCounter = 0;
+let spinInterval = null;
+
+const LISTENED_KEY = "mod-roulette-listened";
+const EXCLUDED_KEY = "mod-roulette-excluded";
+
+function loadListened() {
+  try {
+    const raw = localStorage.getItem(LISTENED_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    listened = {};
+    Object.keys(parsed).forEach(key => {
+      const val = parsed[key];
+      if (val && typeof val === "object") {
+        listened[key] = val;
+      } else if (val) {
+        // legacy boolean-only entry from an earlier version — recover what we can from the key
+        const parts = key.split("::");
+        listened[key] = { artist: parts[0] || "Unknown", title: parts[1] || "Unknown", year: "—", cat: null, listenedAt: 0 };
+      }
+    });
+  } catch (e) {
+    listened = {};
+  }
+}
+function saveListened() {
+  try { localStorage.setItem(LISTENED_KEY, JSON.stringify(listened)); } catch (e) {}
+}
+
+function loadExcluded() {
+  try {
+    const raw = localStorage.getItem(EXCLUDED_KEY);
+    excluded = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    excluded = {};
+  }
+}
+function saveExcluded() {
+  try { localStorage.setItem(EXCLUDED_KEY, JSON.stringify(excluded)); } catch (e) {}
+}
+
+function albumKey(a) { return a.artist + "::" + a.title; }
+function catInfo(cat) { return CATS[cat] || { label: "Unknown era", color: "#8A8D96" }; }
+function normalizeForMatch(s) { return (s || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
+
+// Filters a pool by exclusion list and (optionally) listened status,
+// falling back gracefully rather than ever returning an empty pool.
+function filterPool(pool, keyFn) {
+  let filtered = pool.filter(item => {
+    const k = keyFn(item);
+    return !excluded[k] && (!skipListened || !listened[k]);
+  });
+  if (filtered.length === 0) filtered = pool.filter(item => !excluded[keyFn(item)]);
+  if (filtered.length === 0) filtered = pool;
+  return filtered;
+}
+
+function currentPool() {
+  return filter === "all" ? ALBUMS : ALBUMS.filter(a => a.cat === filter);
+}
+function currentSeedPool() {
+  return filter === "all" ? SEED_ARTISTS : SEED_ARTISTS.filter(a => a.cat === filter);
+}
+
+// Title patterns that usually indicate something other than a studio album
+const NON_STUDIO_PATTERNS = [
+  /\blive\b/i, /\bunplugged\b/i,
+  /\bep\b/i, /\bsingle\b/i,
+  /greatest hits/i, /\bbest of\b/i, /anthology/i, /\bcollection\b/i,
+  /\bremix(es)?\b/i, /karaoke/i, /tribute/i, /b-sides/i, /\bdemos?\b/i,
+];
+
+function isLikelyStudioAlbum(r) {
+  if (NON_STUDIO_PATTERNS.some(p => p.test(r.collectionName))) return false;
+  if (r.trackCount && r.trackCount < 6) return false;
+  return true;
+}
+
+function pickCurated() {
+  const pool = filterPool(currentPool(), albumKey);
+  const chosen = pool[Math.floor(Math.random() * pool.length)];
+  seedCounter += 1;
+  return Object.assign({}, chosen, { seed: seedCounter });
+}
+
+async function resolveAppleMusicMeta(a) {
+  const fallback = "https://music.apple.com/search?term=" + encodeURIComponent(a.artist + " " + a.title);
+  try {
+    const res = await fetch("https://itunes.apple.com/search?term=" + encodeURIComponent(a.artist + " " + a.title) + "&entity=album&limit=5&country=GB");
+    const data = await res.json();
+    const results = data.results || [];
+    const normArtist = normalizeForMatch(a.artist);
+    const normTitle = normalizeForMatch(a.title);
+    // Prefer an exact artist+title match; fall back to exact artist match only
+    // (e.g. a "Remastered" suffix). Never fall back to an unrelated top result —
+    // that's how the wrong band's artwork ends up on the card.
+    let hit = results.find(r => normalizeForMatch(r.artistName) === normArtist && normalizeForMatch(r.collectionName) === normTitle);
+    if (!hit) hit = results.find(r => normalizeForMatch(r.artistName) === normArtist);
+    return {
+      url: hit && hit.collectionViewUrl ? hit.collectionViewUrl : fallback,
+      artwork: hit && hit.artworkUrl100 ? hit.artworkUrl100.replace("100x100", "600x600") : null,
+    };
+  } catch (e) {
+    return { url: fallback, artwork: null };
+  }
+}
+
+async function pickLive() {
+  const seedPool = currentSeedPool();
+  const seed = seedPool[Math.floor(Math.random() * seedPool.length)];
+  const res = await fetch("https://itunes.apple.com/search?term=" + encodeURIComponent(seed.name) + "&entity=album&limit=25&country=GB");
+  const data = await res.json();
+  const normSeed = normalizeForMatch(seed.name);
+  let candidates = (data.results || []).filter(
+    r => r.collectionType === "Album" && r.artistName && r.collectionName && normalizeForMatch(r.artistName) === normSeed
+  );
+  if (studioOnly) candidates = candidates.filter(isLikelyStudioAlbum);
+  if (candidates.length === 0) throw new Error("no live results");
+  candidates = filterPool(candidates, r => r.artistName + "::" + r.collectionName);
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  seedCounter += 1;
+  return {
+    artist: pick.artistName,
+    title: pick.collectionName,
+    year: pick.releaseDate ? pick.releaseDate.slice(0, 4) : "—",
+    cat: seed.cat,
+    note: "Pulled live from the Apple Music catalog" + (pick.primaryGenreName ? " · " + pick.primaryGenreName : "") + ".",
+    track: null,
+    appleMusicUrl: pick.collectionViewUrl,
+    artwork: pick.artworkUrl100 ? pick.artworkUrl100.replace("100x100", "600x600") : null,
+    seed: seedCounter,
+  };
+}
+
+function spin() {
+  if (spinning) return;
+  spinning = true;
+  document.getElementById("liveNotice").textContent = "";
+  document.getElementById("spinLabel").textContent = "SPINNING…";
+  const roundelEl = document.getElementById("roundel");
+  roundelEl.classList.remove("spinning");
+  void roundelEl.offsetWidth; // reflow to restart animation
+  roundelEl.classList.add("spinning");
+
+  let ticks = 0;
+  const maxTicks = 14;
+  spinInterval = setInterval(() => {
+    album = pickCurated();
+    renderCard();
+    ticks += 1;
+    if (ticks >= maxTicks) {
+      clearInterval(spinInterval);
+      finalizeSpin();
+    }
+  }, 70);
+}
+
+async function finalizeSpin() {
+  let finalAlbum;
+  if (infiniteMode) {
+    try {
+      finalAlbum = await pickLive();
+    } catch (e) {
+      finalAlbum = pickCurated();
+      document.getElementById("liveNotice").textContent = "Live catalog unreachable — showing a curated pick instead.";
+    }
+  } else {
+    finalAlbum = pickCurated();
+  }
+  album = finalAlbum;
+  history = [finalAlbum].concat(history).slice(0, 5);
+  renderCard();
+  renderHistory();
+  spinning = false;
+  document.getElementById("spinLabel").textContent = "TAP THE TARGET";
+
+  if (!finalAlbum.appleMusicUrl) {
+    resolveAppleMusicMeta(finalAlbum).then(meta => {
+      finalAlbum.appleMusicUrl = meta.url;
+      if (meta.artwork) finalAlbum.artwork = meta.artwork;
+      renderCard();
+      renderHistory();
+    });
+  }
+}
+
+function toggleListened(key, albumData) {
+  if (listened[key]) {
+    delete listened[key];
+  } else {
+    const a = albumData || album;
+    listened[key] = {
+      artist: a.artist,
+      title: a.title,
+      year: a.year,
+      cat: a.cat,
+      artwork: a.artwork || null,
+      appleMusicUrl: a.appleMusicUrl || null,
+      track: a.track || null,
+      note: a.note || "",
+      listenedAt: Date.now(),
+    };
+  }
+  saveListened();
+  renderCard();
+  renderHistory();
+  renderListenedCount();
+}
+
+function resetSpinHistory() {
+  history = [];
+  album = null;
+  renderCard();
+  renderHistory();
+}
+
+function resetListened() {
+  listened = {};
+  saveListened();
+  renderCard();
+  renderHistory();
+  renderListenedCount();
+}
+
+function excludeCurrent() {
+  if (!album) return;
+  const key = albumKey(album);
+  excluded[key] = { artist: album.artist, title: album.title };
+  saveExcluded();
+  renderExcludedPanel();
+  spin();
+}
+
+function unexclude(key) {
+  delete excluded[key];
+  saveExcluded();
+  renderExcludedPanel();
+}
+
+function clearExcluded() {
+  excluded = {};
+  saveExcluded();
+  renderExcludedPanel();
+}
+
+// ---- Rendering ----
+function renderChips() {
+  const chipsEl = document.getElementById("chips");
+  const items = [{ key: "all", label: "All Eras", color: "#F2EEE4" }].concat(
+    Object.keys(CATS).map(k => ({ key: k, label: CATS[k].label, color: CATS[k].color }))
+  );
+  chipsEl.innerHTML = "";
+  items.forEach(c => {
+    const btn = document.createElement("button");
+    btn.className = "chip" + (filter === c.key ? " active" : "");
+    btn.style.setProperty("--chip-color", c.color);
+    btn.style.borderColor = filter === c.key ? c.color : "";
+    btn.style.color = filter === c.key ? c.color : "";
+    btn.textContent = c.label;
+    btn.onclick = () => { filter = c.key; renderChips(); renderCard(); };
+    chipsEl.appendChild(btn);
+  });
+}
+
+function renderRoundel() {
+  const el = document.getElementById("roundel");
+  const rings = [
+    { scale: 1, color: "#FF3D6E" },
+    { scale: 0.72, color: "#F2EEE4" },
+    { scale: 0.44, color: "#4361EE" },
+    { scale: 0.18, color: "#FFD23F" },
+  ];
+  el.innerHTML = rings.map(r => {
+    const size = 220 * r.scale;
+    return `<div class="ring" style="width:${size}px;height:${size}px;background:${r.color};"></div>`;
+  }).join("");
+}
+
+function coverHTML(a) {
+  if (a.artwork) {
+    return `<div class="cover"><img src="${a.artwork}" alt="" /></div>`;
+  }
+  const color = catInfo(a.cat).color;
+  const angle = ((a.seed || 1) * 47) % 360;
+  return `
+    <div class="cover" style="background:repeating-linear-gradient(${angle}deg, ${color}22, ${color}22 6px, #14151A 6px, #14151A 14px); border:1px solid ${color}55;">
+      <div class="disc" style="width:44px;height:44px;background:${color};opacity:0.9;"></div>
+      <div class="disc" style="width:20px;height:20px;background:#14151A;"></div>
+    </div>`;
+}
+
+function renderCard() {
+  const wrap = document.getElementById("cardWrap");
+  if (!album) {
+    const pool = currentPool();
+    const seedPool = currentSeedPool();
+    const msg = infiniteMode
+      ? `Infinite mode is on — pulling live from Apple Music's full catalog across ${seedPool.length} seed artists.`
+      : `${pool.length} curated albums loaded across ${filter === "all" ? "four eras" : CATS[filter].label}.`;
+    wrap.innerHTML = `<div class="empty-state">${msg} Tap the target to draw one.</div>`;
+    return;
+  }
+  const key = albumKey(album);
+  const isListened = !!listened[key];
+  const appleHref = album.appleMusicUrl || ("https://music.apple.com/search?term=" + encodeURIComponent(album.artist + " " + album.title));
+  wrap.innerHTML = `
+    <div class="card">
+      ${coverHTML(album)}
+      <div class="card-body">
+        <div class="card-meta" style="color:${catInfo(album.cat).color};">${catInfo(album.cat).label} · ${album.year}</div>
+        <div class="card-title">${escapeHTML(album.title)}</div>
+        <div class="card-artist">${escapeHTML(album.artist)}</div>
+        <div class="card-note">${escapeHTML(album.note)}</div>
+        ${album.track ? `<div class="card-track">START HERE — <span>${escapeHTML(album.track)}</span></div>` : ""}
+        <div class="card-actions">
+          <button class="btn${isListened ? " listened" : ""}" id="listenedBtn">${isListened ? "✓ Listened" : "Mark as listened"}</button>
+          <a class="btn apple" href="${appleHref}">Open in Apple Music ↗</a>
+          <button class="btn" id="excludeBtn">Don't suggest again</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById("listenedBtn").onclick = () => toggleListened(key, album);
+  document.getElementById("excludeBtn").onclick = excludeCurrent;
+}
+
+function renderHistory() {
+  const wrap = document.getElementById("historyWrap");
+  if (history.length <= 1) { wrap.innerHTML = ""; return; }
+  const rows = history.slice(1).map(a => {
+    const mark = listened[albumKey(a)] ? "✓ " : "";
+    return `<div class="history-row"><span class="h-info">${mark}${escapeHTML(a.artist)} — <span class="title">${escapeHTML(a.title)}</span></span><span class="h-year" style="color:${catInfo(a.cat).color}">${a.year}</span></div>`;
+  }).join("");
+  wrap.innerHTML = `
+    <div class="history-wrap">
+      <div class="history-head">
+        <div class="history-label">Previously spun</div>
+        <button class="reset-link" id="resetHistoryBtn">Reset</button>
+      </div>
+      ${rows}
+    </div>`;
+  document.getElementById("resetHistoryBtn").onclick = resetSpinHistory;
+}
+
+function renderListenedCount() {
+  const wrap = document.getElementById("listenedCountWrap");
+  const count = Object.keys(listened).length;
+  if (count === 0) {
+    wrap.innerHTML = "";
+    return;
+  }
+  if (count >= ALBUMS.length) {
+    wrap.innerHTML = `
+      <div class="complete-banner">
+        <div class="headline">CURATED LIBRARY COMPLETE</div>
+        <div class="sub">You've marked all ${ALBUMS.length} curated albums as listened. Reset the list to start spinning through them again — your Apple Music listening history isn't touched, just the checkmarks here.</div>
+        <button class="btn listened" id="resetListenedBtn">Reset listened list</button>
+      </div>`;
+    document.getElementById("resetListenedBtn").onclick = resetListened;
+    return;
+  }
+  wrap.innerHTML = `<div class="listened-count">${count} of ${ALBUMS.length} albums marked listened</div>`;
+}
+
+function renderInfiniteToggle() {
+  const btn = document.getElementById("infiniteToggle");
+  const label = document.getElementById("infiniteLabel");
+  btn.classList.toggle("on", infiniteMode);
+  label.textContent = "∞ INFINITE MODE — LIVE APPLE MUSIC CATALOG " + (infiniteMode ? "ON" : "OFF");
+}
+
+function renderStudioToggle() {
+  const btn = document.getElementById("studioToggle");
+  const label = document.getElementById("studioLabel");
+  btn.classList.toggle("on", studioOnly);
+  label.textContent = "STUDIO ALBUMS ONLY " + (studioOnly ? "ON" : "OFF");
+}
+
+function renderSkipListenedToggle() {
+  const btn = document.getElementById("skipListenedToggle");
+  const label = document.getElementById("skipListenedLabel");
+  btn.classList.toggle("on", skipListened);
+  label.textContent = "SKIP LISTENED ALBUMS " + (skipListened ? "ON" : "OFF");
+}
+
+function renderExcludedPanel() {
+  const wrap = document.getElementById("excludedWrap");
+  const entries = Object.keys(excluded).map(key => Object.assign({ key: key }, excluded[key]));
+  if (entries.length === 0) {
+    wrap.innerHTML = "";
+    return;
+  }
+  if (!excludedPanelOpen) {
+    wrap.innerHTML = `<div class="excluded-wrap"><button class="excluded-toggle" id="excludedToggleBtn">${entries.length} album${entries.length === 1 ? "" : "s"} excluded — manage</button></div>`;
+    document.getElementById("excludedToggleBtn").onclick = () => { excludedPanelOpen = true; renderExcludedPanel(); };
+    return;
+  }
+  const rows = entries.map(a => `
+    <div class="excluded-row">
+      <div class="er-info">${escapeHTML(a.artist)} — <span class="title">${escapeHTML(a.title)}</span></div>
+      <button data-key="${escapeHTML(a.key)}">Un-exclude</button>
+    </div>`).join("");
+  wrap.innerHTML = `
+    <div class="excluded-wrap">
+      <button class="excluded-toggle" id="excludedToggleBtn">Hide excluded list</button>
+      <div class="excluded-panel">
+        ${rows}
+        <button class="excluded-toggle excluded-clear-all" id="clearExcludedBtn">Clear all exclusions</button>
+      </div>
+    </div>`;
+  document.getElementById("excludedToggleBtn").onclick = () => { excludedPanelOpen = false; renderExcludedPanel(); };
+  document.getElementById("clearExcludedBtn").onclick = clearExcluded;
+  wrap.querySelectorAll(".excluded-row button").forEach(btn => {
+    btn.onclick = () => unexclude(btn.getAttribute("data-key"));
+  });
+}
+
+function escapeHTML(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ---- Init ----
+loadListened();
+loadExcluded();
+renderChips();
+renderRoundel();
+renderCard();
+renderHistory();
+renderListenedCount();
+renderExcludedPanel();
+renderInfiniteToggle();
+renderStudioToggle();
+renderSkipListenedToggle();
+
+document.getElementById("roundelBtn").onclick = spin;
+document.getElementById("infiniteToggle").onclick = () => {
+  infiniteMode = !infiniteMode;
+  renderInfiniteToggle();
+  renderCard();
+};
+document.getElementById("studioToggle").onclick = () => {
+  studioOnly = !studioOnly;
+  renderStudioToggle();
+};
+document.getElementById("skipListenedToggle").onclick = () => {
+  skipListened = !skipListened;
+  renderSkipListenedToggle();
+};
+</script>
+</body>
+</html>
